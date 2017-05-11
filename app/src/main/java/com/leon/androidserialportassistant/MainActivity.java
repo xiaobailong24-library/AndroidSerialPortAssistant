@@ -37,6 +37,15 @@ public class MainActivity extends AppCompatActivity {
     private SerialPort mSerialPort;
     private RecvThread mRecvThread;
 
+    final byte[] data = new byte[]{
+            0x10, 0x00,//T
+            0x00, 0x08,//L
+            //V (OpMode)
+            0x20, 0x00,//T
+            0x00, 0x04,//L
+            0x00, 0x00, 0x00, 0x00//V 单次
+    };
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,6 +74,8 @@ public class MainActivity extends AppCompatActivity {
                         throw new InvalidParameterException();
                     }
                     try {
+                        mEditSend.setText(ConvertUtils.bytes2HexString(data));
+
                         M10A_GPIO.PowerOn();
                         /* Open serial port */
                         mSerialPort = new SerialPort(new File(path), baudrate, 0);
@@ -115,19 +126,26 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 /* Check messages */
-                //                new byte[]{
+                //                byte[] data = new byte[]{
                 //                        0x10, 0x00,//T
                 //                        0x00, 0x08,//L
                 //                        //V (OpMode)
                 //                        0x20, 0x00,//T
                 //                        0x00, 0x04,//L
-                //                        0x00, 0x00, 0x00, 0x00//V 多次
+                //                        0x00, 0x00, 0x00, 0x00//V 单次
                 //                };
-                String msg = "1000 0008 2000 0004 0200 0064";//100次
                 //                String msg = "1000 0008 2000 0004 0000 0000";//单次
+                //0210160004200E00000000000600730500000000000000000000
+
+                //                String msg = "1000 0008 2000 0004 0200 0064";//100次
+                //0210160004200E00000000000600730500000000000000000000
+
                 //                String msg = "1102 0000";//设备配置查询消息
-                ConvertUtils.hexString2Bytes(msg.replaceAll(" ", ""));
-                mEditSend.setText(msg.replaceAll(" ", ""));
+                //0210160004200E00000000000600730500000000000000000000
+
+                //                String msg = ConvertUtils.bytes2HexString(data);
+                //                mEditSend.setText(ConvertUtils.bytes2HexString(data));
+                String msg = mEditSend.getText().toString();
                 if (TextUtils.isEmpty(msg)) {
                     Toast.makeText(MainActivity.this, "输入为空", Toast.LENGTH_SHORT).show();
                     return;
@@ -135,9 +153,13 @@ public class MainActivity extends AppCompatActivity {
                 // TODO: 2016-05-05 setting_send 
                 /* Write serial port */
                 try {
+                    //                    mOutputStream.write(ConvertUtils.hexString2Bytes(msg.replaceAll(" ", "")));
+                    //                    mOutputStream.write(ConvertUtils.hexString2Bytes(msg.replaceAll(" ", "")));
                     mOutputStream.write(ConvertUtils.hexString2Bytes(msg.replaceAll(" ", "")));
                     mOutputStream.flush();
                     Log.w(TAG, "onClick: " + Arrays.toString(ConvertUtils.hexString2Bytes(msg.replaceAll(" ", ""))));
+                    onDataSend(ConvertUtils.hexString2Bytes(msg.replaceAll(" ", "")),
+                            msg.length());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -158,18 +180,18 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 try {
-//                    while (++timeoutAdder < 1000) {
-                        while (mInputStream.available() > 0) {
-                            //循环读取数据
-                            buffer = new byte[mInputStream.available()];
-                            int readLen = mInputStream.read(buffer);
-                            Log.d(TAG, "run: readLen=" + readLen);
-                            if (readLen > 0) {
-                                Log.d(TAG, "receive: " + ConvertUtils.bytes2HexString(buffer));
-                                onDataReceived(buffer, readLen);
-                            }
-//                        }
-//                        Thread.sleep(1);
+                    //                    while (++timeoutAdder < 1000) {
+                    while (mInputStream.available() > 0) {
+                        //循环读取数据
+                        buffer = new byte[mInputStream.available()];
+                        int readLen = mInputStream.read(buffer);
+                        Log.d(TAG, "run: readLen=" + readLen);
+                        if (readLen > 0) {
+                            Log.d(TAG, "receive: " + ConvertUtils.bytes2HexString(buffer));
+                            onDataReceived(buffer, readLen);
+                        }
+                        //                        }
+                        //                        Thread.sleep(1);
                     }
                     timeoutAdder = 0;
                 } catch (IOException e) {
@@ -184,7 +206,18 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mTextRecv.append(ConvertUtils.bytes2HexString(buffer), 0, size);
+                mTextRecv.append("--->" + ConvertUtils.bytes2HexString(buffer), 0, size);
+                mTextRecv.append("\n");
+            }
+        });
+    }
+
+    private void onDataSend(final byte[] buffer, final int size) {
+        // TODO: 2016-05-05 setting_recv
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mTextRecv.append("<---" + ConvertUtils.bytes2HexString(buffer), 0, size);
                 mTextRecv.append("\n");
             }
         });
