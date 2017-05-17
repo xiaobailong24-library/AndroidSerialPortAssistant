@@ -38,11 +38,11 @@ public class MainActivity extends AppCompatActivity {
     private RecvThread mRecvThread;
 
     final byte[] data = new byte[]{
-            0x10, 0x00,//T
-            0x00, 0x08,//L
+            0x00, 0x10,//T
+            0x08, 0x00,//L
             //V (OpMode)
-            0x20, 0x00,//T
-            0x00, 0x04,//L
+            0x00, 0x20, //T
+            0x04, 0x00, //L
             0x00, 0x00, 0x00, 0x00//V 单次
     };
 
@@ -155,9 +155,9 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     //                    mOutputStream.write(ConvertUtils.hexString2Bytes(msg.replaceAll(" ", "")));
                     //                    mOutputStream.write(ConvertUtils.hexString2Bytes(msg.replaceAll(" ", "")));
-                    mOutputStream.write(ConvertUtils.hexString2Bytes(msg.replaceAll(" ", "")));
+                    mOutputStream.write(data);
                     mOutputStream.flush();
-                    Log.w(TAG, "onClick: " + Arrays.toString(ConvertUtils.hexString2Bytes(msg.replaceAll(" ", ""))));
+                    Log.w(TAG, "onClick: " + Arrays.toString(data));
                     onDataSend(ConvertUtils.hexString2Bytes(msg.replaceAll(" ", "")),
                             msg.length());
                 } catch (IOException e) {
@@ -188,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(TAG, "run: readLen=" + readLen);
                         if (readLen > 0) {
                             Log.d(TAG, "receive: " + ConvertUtils.bytes2HexString(buffer));
-                            onDataReceived(buffer, readLen);
+                            onDataReceived(buffer, readLen * 2);
                         }
                         //                        }
                         //                        Thread.sleep(1);
